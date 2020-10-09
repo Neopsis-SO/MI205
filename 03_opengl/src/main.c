@@ -9,6 +9,19 @@
 #include "SDL2/SDL_opengl.h"
 
 #include "text.h"
+//#include "data.h"
+
+#define DataFileSize 81920
+#define NbData	1024
+#define DataOffset DataFileSize/NbData
+#define path "src/dubinski.tab"
+
+#define DISK_SIZE 16384
+#define BULGE_SIZE 8192
+#define HALO_SIZE 16384
+
+#define MASS_FACTOR 10
+#define DAMPING_FACTOR 1
 
 static float g_inertia = 0.5f;
 
@@ -19,6 +32,40 @@ static float newCamRot[] = { 0.0f, 0.0f, 0.0f };
 
 static bool g_showGrid = true;
 static bool g_showAxes = true;
+
+/*------------------------------*/
+// Variables for simulation 
+
+struct particule {
+	float masse;
+	float posX;
+	float posY;
+	float posZ;
+	float mobX;
+	float mobY;
+	float mobZ;
+	float accX;
+	float accY;
+	float accZ;
+};
+
+struct temp {
+	float deltaX;
+	float deltaY;
+	float deltaZ;
+	float d_ij;
+};
+
+/*
+float masse[NbData] = {};
+float posX[NbData] = {};
+float posY[NbData] = {};
+float posZ[NbData] = {};
+float mobX[NbData] = {};
+float mobY[NbData] = {};
+float mobZ[NbData] = {};*/
+struct particule all_particules[NbData];
+/*------------------------------*/
 
 void DrawGridXZ( float ox, float oy, float oz, int w, int h, float sz ) {
 	
@@ -38,6 +85,58 @@ void DrawGridXZ( float ox, float oy, float oz, int w, int h, float sz ) {
 	for ( i = 0; i <= h; ++i ) {
 		glVertex3f( ox + i * sz, oy, oz );
 		glVertex3f( ox + i * sz, oy, oz + h * sz );
+	}
+
+	glEnd();
+
+}
+
+void CalculateMove (struct particule tab[]) {
+	int i = 0;
+	
+	// Loop to calculate all new pos
+	for (i = 0; i < NbData; i++) {
+		tab[i].accX = 0;
+		tab[i].accY = 0;
+		tab[i].accZ = 0;
+		int j = 0;
+
+		for (j = 0; j < NbData; j++) {
+
+			if (j != i) {
+				struct temp tempo;
+				tempo.deltaX = tab[j].posX - tab[i].posX;
+				tempo.deltaY = tab[j].posY - tab[i].posY;
+				tempo.deltaZ = tab[j].posZ - tab[i].posZ;
+				tempo.d_ij = sqrt( pow(tempo.deltaX,2) + pow(tempo.deltaY,2) + pow(tempo.deltaZ,2) );
+				//TODO: calcul slide 31
+				/*
+				tab[i].mobX += acceleration
+				tab[i].mobY +=
+				tab[i].mobZ +=
+				tab[i].accX += velocity * 0.1
+				tab[i].accY +=
+				tab[i].accZ +=
+				*/
+			}
+		}
+
+	}
+
+
+}
+
+void DrawGalaxies (struct particule aff[]) {
+	
+	int i;
+
+	glPointSize( 0.1f );
+
+	glBegin( GL_POINTS );
+
+	for ( i = 0; i <= NbData; ++i ) {
+		glColor3f( 1.0f, 0.0f, 1.0f );
+		glVertex3f( aff[i].posX, aff[i].posY, aff[i].posZ);
 	}
 
 	glEnd();
@@ -90,6 +189,25 @@ int main( int argc, char ** argv ) {
 	float fps = 0.0;
 	char sfps[40] = "FPS: ";
 
+	/*------------------------------*/
+	// Variables for Simu
+
+	float buffMasse = 0.0;
+	float buffPosX = 0.0;
+	float buffPosY = 0.0;
+	float buffPosZ = 0.0;
+	float buffMobX = 0.0;
+	float buffMobY = 0.0;
+	float buffMobZ = 0.0;
+
+	FILE * DataFile = fopen(path, "r");
+	if (path == NULL) {
+		return -1;
+	}	
+	int j = 0;
+
+	/*------------------------------*/
+
 	if ( SDL_Init ( SDL_INIT_EVERYTHING ) < 0 ) {
 		printf( "error: unable to init sdl\n" );
 		return -1;
@@ -120,6 +238,37 @@ int main( int argc, char ** argv ) {
 	}
 
 	SDL_GL_SetSwapInterval( 1 );
+
+	/***********************
+	*
+	***********************/
+
+	int p = 0;
+	int test = 0;
+	for (p = 0; p < DataFileSize; p++) {
+		fscanf(DataFile, "%f %f %f %f %f %f %f\n", &buffMasse, &buffPosX, &buffPosY, &buffPosZ, &buffMobX, &buffMobY, &buffMobZ);
+
+		if(j++ == DataOffset-1) {
+			j = 0;
+			all_particules[test].masse = buffMasse;
+			all_particules[test].posX = buffPosX;
+			all_particules[test].posY = buffPosY;
+			all_particules[test].posZ = buffPosZ;
+			all_particules[test].mobX = buffMobX;
+			all_particules[test].mobY = buffMobY;
+			all_particules[test].mobZ = buffMobZ;
+			test++;
+		}
+	}
+	//Test data extraction
+	/*int k = 0;
+	for (k = 0; k < NbData; k++) {
+		printf("%f %f %f \n", posX[k], posY[k], posZ[k] );
+	}*/
+	fclose(DataFile);
+	printf("data extraction complited\n");
+
+	/**********************/
 
 	while ( !done ) {
   		
@@ -196,7 +345,11 @@ int main( int argc, char ** argv ) {
 
 		gettimeofday( &begin, NULL );
 
+		/*------------------------------*/
 		// Simulation should be computed here
+		DrawGalaxies(all_particules);
+		 
+		/*------------------------------*/
 
 		gettimeofday( &end, NULL );
 
@@ -212,7 +365,7 @@ int main( int argc, char ** argv ) {
 		DrawText( 10, height - 20, sfps, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, 30, "'F1' : show/hide grid", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, 10, "'F2' : show/hide axes", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
-
+	
 		SDL_GL_SwapWindow( window );
 		SDL_UpdateWindowSurface( window );
 	}
@@ -221,7 +374,6 @@ int main( int argc, char ** argv ) {
 	DestroyTextRes();
 	SDL_DestroyWindow( window );
 	SDL_Quit();
-
 	return 1;
 }
 

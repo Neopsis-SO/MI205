@@ -1,11 +1,7 @@
 #include <stdio.h>
+#include "data.h"
 
-#define DataFileSize 81920
-#define NbData	1024
-#define DataOffset DataFileSize/NbData
-
-#define path "dubinski.tab"
-
+/*
 float masse[NbData] = {};
 float posX[NbData] = {};
 float posY[NbData] = {};
@@ -13,8 +9,9 @@ float posZ[NbData] = {};
 float mobX[NbData] = {};
 float mobY[NbData] = {};
 float mobZ[NbData] = {};
+*/
 
-int main( int argc, char ** argv ) {
+int dataExtraction(float masse[], float posX[], float posY[], float posZ[], float mobX[], float mobY[], float mobZ[], int Size) {
 	float buffMasse;
 	float buffPosX;
 	float buffPosY;
@@ -28,8 +25,9 @@ int main( int argc, char ** argv ) {
 		return -1;
 	}
 	
-	int j = 0;
-	for (int i = 0; i < DataFileSize; i++) {
+	int i = 0, j = 0;
+
+	for (i = 0; i < Size; i++) {
 		fscanf(DataFile, "%f %f %f %f %f %f %f\n", &buffMasse, &buffPosX, &buffPosY, &buffPosZ, &buffMobX, &buffMobY, &buffMobZ);
 
 		if(j++ == DataOffset-1) {
@@ -41,11 +39,11 @@ int main( int argc, char ** argv ) {
 			mobX[(i+1)/DataOffset-1] = buffMobX;
 			mobY[(i+1)/DataOffset-1] = buffMobY;
 			mobZ[(i+1)/DataOffset-1] = buffMobZ;
-			printf("%1.10f %f \n", masse[(i+1)/DataOffset-1], posX[(i+1)/DataOffset-1]);
+			//printf("%1.10f %f \n", masse[(i+1)/DataOffset-1], posX[(i+1)/DataOffset-1]);
 		}
 	}
 
 	fclose(DataFile);
 
-	return 0;
+	return 0; //TODO: return number of data
 }
