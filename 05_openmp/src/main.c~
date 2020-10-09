@@ -1,0 +1,41 @@
+#include <stdio.h>
+#include <omp.h>
+
+int main( int argc, char ** argv ) {
+	
+	int i, j;
+	int sum = 0;
+	
+	omp_set_num_threads( 4 );
+
+	#pragma omp parallel
+	{
+		printf( "in parallel region\n" );
+
+	}
+
+	#pragma omp parallel for reduction(+:sum)
+	for ( i = 0; i < 1; i++ ) {
+		for ( j = 0; j < 1; j++ ) {	
+			sum = sum + i + j;
+		}
+	}
+
+	#pragma omp parallel sections
+	{
+		#pragma omp section
+		{
+			printf( "section executed by thread id = %d\n", omp_get_thread_num() );
+		}
+
+		#pragma omp section
+		{
+			printf( "section executed by thread id = %d\n", omp_get_thread_num() );
+		}
+	}
+
+	printf( "done\n" );
+
+	return 1;
+}
+

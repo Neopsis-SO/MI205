@@ -1,0 +1,9 @@
+
+#define TEXT_ALIGN_LEFT 0
+#define TEXT_ALIGN_RIGHT 1
+
+bool InitTextRes( char * font );
+void DestroyTextRes();
+void DrawText( float x, float y, const char *text, int align, unsigned int col );
+
+
