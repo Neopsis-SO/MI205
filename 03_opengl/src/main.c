@@ -9,7 +9,6 @@
 #include "SDL2/SDL_opengl.h"
 
 #include "text.h"
-//#include "data.h"
 
 #define DataFileSize 81920
 #define NbData	1024
@@ -56,14 +55,6 @@ struct temp {
 	float d_ij;
 };
 
-/*
-float masse[NbData] = {};
-float posX[NbData] = {};
-float posY[NbData] = {};
-float posZ[NbData] = {};
-float mobX[NbData] = {};
-float mobY[NbData] = {};
-float mobZ[NbData] = {};*/
 struct particule all_particules[NbData];
 /*------------------------------*/
 
@@ -89,6 +80,45 @@ void DrawGridXZ( float ox, float oy, float oz, int w, int h, float sz ) {
 
 	glEnd();
 
+}
+
+int dataExtraction(struct particule data[])
+{
+	float buffMasse = 0.0f;
+	float buffPosX = 0.0f;
+	float buffPosY = 0.0f;
+	float buffPosZ = 0.0f;
+	float buffMobX = 0.0f;
+	float buffMobY = 0.0f;
+	float buffMobZ = 0.0f;
+
+	int offsetIndex = 0;
+	int lineIndex = 0;
+	int dataIndex = 0;
+
+	FILE * DataFile = fopen(path, "r");
+	if (path == NULL) {
+		return -1;
+	}	
+
+	for (lineIndex = 0; lineIndex < DataFileSize; lineIndex++) {
+		fscanf(DataFile, "%f %f %f %f %f %f %f\n", &buffMasse, &buffPosX, &buffPosY, &buffPosZ, &buffMobX, &buffMobY, &buffMobZ);
+
+		if(offsetIndex++ == DataOffset-1) {
+			offsetIndex = 0;
+			data[dataIndex].masse = buffMasse;
+			data[dataIndex].posX = buffPosX;
+			data[dataIndex].posY = buffPosY;
+			data[dataIndex].posZ = buffPosZ;
+			data[dataIndex].mobX = buffMobX;
+			data[dataIndex].mobY = buffMobY;
+			data[dataIndex].mobZ = buffMobZ;
+			dataIndex++;
+		}
+	}
+	fclose(DataFile);
+	printf("data extraction complited\n");
+	return 0;
 }
 
 void CalculateMove (struct particule tab[]) {
@@ -189,25 +219,6 @@ int main( int argc, char ** argv ) {
 	float fps = 0.0;
 	char sfps[40] = "FPS: ";
 
-	/*------------------------------*/
-	// Variables for Simu
-
-	float buffMasse = 0.0;
-	float buffPosX = 0.0;
-	float buffPosY = 0.0;
-	float buffPosZ = 0.0;
-	float buffMobX = 0.0;
-	float buffMobY = 0.0;
-	float buffMobZ = 0.0;
-
-	FILE * DataFile = fopen(path, "r");
-	if (path == NULL) {
-		return -1;
-	}	
-	int j = 0;
-
-	/*------------------------------*/
-
 	if ( SDL_Init ( SDL_INIT_EVERYTHING ) < 0 ) {
 		printf( "error: unable to init sdl\n" );
 		return -1;
@@ -239,34 +250,14 @@ int main( int argc, char ** argv ) {
 
 	SDL_GL_SetSwapInterval( 1 );
 
-	/***********************
-	*
-	***********************/
-
-	int p = 0;
-	int test = 0;
-	for (p = 0; p < DataFileSize; p++) {
-		fscanf(DataFile, "%f %f %f %f %f %f %f\n", &buffMasse, &buffPosX, &buffPosY, &buffPosZ, &buffMobX, &buffMobY, &buffMobZ);
-
-		if(j++ == DataOffset-1) {
-			j = 0;
-			all_particules[test].masse = buffMasse;
-			all_particules[test].posX = buffPosX;
-			all_particules[test].posY = buffPosY;
-			all_particules[test].posZ = buffPosZ;
-			all_particules[test].mobX = buffMobX;
-			all_particules[test].mobY = buffMobY;
-			all_particules[test].mobZ = buffMobZ;
-			test++;
-		}
-	}
+	/**********************/
+	
+	dataExtraction(all_particules);
 	//Test data extraction
-	/*int k = 0;
-	for (k = 0; k < NbData; k++) {
-		printf("%f %f %f \n", posX[k], posY[k], posZ[k] );
-	}*/
-	fclose(DataFile);
-	printf("data extraction complited\n");
+	// int k = 0;
+	// for (k = 0; k < NbData; k++) {
+	// 	printf("%f %f %f \n", all_particules[k].posX, all_particules[k].posY, all_particules[k].posZ);
+	// }
 
 	/**********************/
 
