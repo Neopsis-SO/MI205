@@ -111,11 +111,11 @@ int dataExtraction(struct particule data[])
 				data[dataIndex].galaxyName = 0;
 			else if(lineIndex < DISK_SIZE)
 				data[dataIndex].galaxyName = 1;
-			else if(lineIndex < BULGE_SIZE/2+DISK_SIZE)
+			else if(lineIndex < ((BULGE_SIZE/2)+DISK_SIZE))
 				data[dataIndex].galaxyName = 2;
-			else if(lineIndex < BULGE_SIZE+DISK_SIZE)
+			else if(lineIndex < (BULGE_SIZE+DISK_SIZE))
 				data[dataIndex].galaxyName = 3;
-			else if(lineIndex < HALO_SIZE/2+BULGE_SIZE)
+			else if(lineIndex < ((HALO_SIZE/2)+BULGE_SIZE))
 				data[dataIndex].galaxyName = 4;
 			else
 				data[dataIndex].galaxyName = 5;
@@ -181,13 +181,13 @@ void DrawGalaxies (struct particule aff[]) {
 		if(aff[i].galaxyName == 0)
 			glColor3f( 0.0f, 0.0f, 1.0f );
 		else if(aff[i].galaxyName == 1)
-			glColor3f( 0.0f, 1.0f, 0.0f );
+			glColor3f( 0.0f, 40.0f, 0.0f );
 		else if(aff[i].galaxyName == 2)
-			glColor3f( 1.0f, 0.0f, 0.0f );
+			glColor3f( 50.0f, 0.0f, 0.0f );
 		else if(aff[i].galaxyName == 3)
-			glColor3f( 1.0f, 0.0f, 1.0f );
+			glColor3f( 1.0f, 0.0f, 100.0f );
 		else if(aff[i].galaxyName == 4)
-			glColor3f( 1.0f, 1.0f, 0.0f );
+			glColor3f( 10.0f, 10.0f, 0.0f );
 		else if(aff[i].galaxyName == 5)
 			glColor3f( 0.0f, 1.0f, 1.0f );
 
