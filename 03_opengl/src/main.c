@@ -11,13 +11,13 @@
 #include "text.h"
 
 #define DataFileSize 81920
-#define NbData	1024
+#define NbData	81920
 #define DataOffset DataFileSize/NbData
 #define path "src/dubinski.tab"
 
-#define DISK_SIZE 16384
-#define BULGE_SIZE 8192
-#define HALO_SIZE 16384
+#define DISK_SIZE 16384	//Fisrt in database
+#define BULGE_SIZE 8192	//Second in database
+#define HALO_SIZE 16384	//Third in database
 
 #define MASS_FACTOR 10
 #define DAMPING_FACTOR 1
@@ -36,6 +36,7 @@ static bool g_showAxes = true;
 // Variables for simulation 
 
 struct particule {
+	int galaxyName; //0:Milky Way / 1:Andromeda
 	float masse;
 	float posX;
 	float posY;
@@ -105,6 +106,20 @@ int dataExtraction(struct particule data[])
 		fscanf(DataFile, "%f %f %f %f %f %f %f\n", &buffMasse, &buffPosX, &buffPosY, &buffPosZ, &buffMobX, &buffMobY, &buffMobZ);
 
 		if(offsetIndex++ == DataOffset-1) {
+			//FIXME : particule seperation seems to doesn't work
+			if(lineIndex < DISK_SIZE/2)
+				data[dataIndex].galaxyName = 0;
+			else if(lineIndex < DISK_SIZE)
+				data[dataIndex].galaxyName = 1;
+			else if(lineIndex < BULGE_SIZE/2+DISK_SIZE)
+				data[dataIndex].galaxyName = 2;
+			else if(lineIndex < BULGE_SIZE+DISK_SIZE)
+				data[dataIndex].galaxyName = 3;
+			else if(lineIndex < HALO_SIZE/2+BULGE_SIZE)
+				data[dataIndex].galaxyName = 4;
+			else
+				data[dataIndex].galaxyName = 5;
+			
 			offsetIndex = 0;
 			data[dataIndex].masse = buffMasse;
 			data[dataIndex].posX = buffPosX;
@@ -152,8 +167,6 @@ void CalculateMove (struct particule tab[]) {
 		}
 
 	}
-
-
 }
 
 void DrawGalaxies (struct particule aff[]) {
@@ -165,7 +178,19 @@ void DrawGalaxies (struct particule aff[]) {
 	glBegin( GL_POINTS );
 
 	for ( i = 0; i <= NbData; ++i ) {
-		glColor3f( 1.0f, 0.0f, 1.0f );
+		if(aff[i].galaxyName == 0)
+			glColor3f( 0.0f, 0.0f, 1.0f );
+		else if(aff[i].galaxyName == 1)
+			glColor3f( 0.0f, 1.0f, 0.0f );
+		else if(aff[i].galaxyName == 2)
+			glColor3f( 1.0f, 0.0f, 0.0f );
+		else if(aff[i].galaxyName == 3)
+			glColor3f( 1.0f, 0.0f, 1.0f );
+		else if(aff[i].galaxyName == 4)
+			glColor3f( 1.0f, 1.0f, 0.0f );
+		else if(aff[i].galaxyName == 5)
+			glColor3f( 0.0f, 1.0f, 1.0f );
+
 		glVertex3f( aff[i].posX, aff[i].posY, aff[i].posZ);
 	}
 
