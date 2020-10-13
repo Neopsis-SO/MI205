@@ -137,34 +137,44 @@ int dataExtraction(struct particule data[])
 
 void CalculateMove (struct particule tab[]) {
 	int i = 0;
-	
-	// Loop to calculate all new pos
+	int j = 0;
+	float tempo_acc = 0; //IMPORTANT DE DECLARER UN FLOAT ICI!!!!!!
+	struct temp tempo;
+
+	// Loop to compute all new position
 	for (i = 0; i < NbData; i++) {
+		tab[i].mobX += tab[i].accX;
+		tab[i].mobY += tab[i].accY;
+		tab[i].mobZ += tab[i].accZ;
 		tab[i].accX = 0;
 		tab[i].accY = 0;
 		tab[i].accZ = 0;
-		int j = 0;
+		tab[i].posX += tab[i].mobX * 0.1;
+		tab[i].posY += tab[i].mobY * 0.1;
+		tab[i].posZ += tab[i].mobZ * 0.1;
+	}
 
-		for (j = 0; j < NbData; j++) {
-
-			if (j != i) {
-				struct temp tempo;
+	// Loop to compute all new acceleration
+	for (i = 0; i < NbData; i++) {
+		for (j = i+1; j < NbData; j++) {
 				tempo.deltaX = tab[j].posX - tab[i].posX;
 				tempo.deltaY = tab[j].posY - tab[i].posY;
 				tempo.deltaZ = tab[j].posZ - tab[i].posZ;
-				tempo.d_ij = sqrt( pow(tempo.deltaX,2) + pow(tempo.deltaY,2) + pow(tempo.deltaZ,2) );
-				//TODO: calcul slide 31
-				/*
-				tab[i].mobX += acceleration
-				tab[i].mobY +=
-				tab[i].mobZ +=
-				tab[i].accX += velocity * 0.1
-				tab[i].accY +=
-				tab[i].accZ +=
-				*/
-			}
+				// Pas de pow() car appel trop lourd pour calcul
+				tempo.d_ij = sqrt( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
+				// Calcul slide 31
+				if (tempo.d_ij < 1)
+					tempo.d_ij = 1;
+				tempo_acc = MASS_FACTOR*DAMPING_FACTOR*(1/(tempo.d_ij*tempo.d_ij*tempo.d_ij))*tab[j].masse; // Meme calcul realise trois fois
+				tab[i].accX += tempo.deltaX * tempo_acc;
+				tab[i].accY += tempo.deltaY * tempo_acc;
+				tab[i].accZ += tempo.deltaZ * tempo_acc;
+				// On remarque que les calculs sont réalisés deux fois, au signe prêt (exemple, si i = 3 et j = 5, on fait
+				// le même calcul , au signe prêt, que lorsque i = 5 et j = 3/ En
+				tab[j].accX += -tab[i].accX;
+				tab[j].accY += -tab[i].accY;
+				tab[j].accZ += -tab[i].accZ;
 		}
-
 	}
 }
 
@@ -351,6 +361,7 @@ int main( int argc, char ** argv ) {
 
 		/*------------------------------*/
 		// Simulation should be computed here
+		CalculateMove(all_particules);
 		DrawGalaxies(all_particules);
 		 
 		/*------------------------------*/
