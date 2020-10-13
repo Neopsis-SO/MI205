@@ -138,45 +138,109 @@ int dataExtraction(struct particule data[])
 void CalculateMove (struct particule tab[]) {
 	int i = 0;
 	int j = 0;
-	float tempo_acc = 0; //IMPORTANT DE DECLARER UN FLOAT ICI!!!!!!
-	struct temp tempo;
-
-	// Loop to compute all new position
+	
+	// Loop to calculate all new pos
+	#pragma omp parallel for
 	for (i = 0; i < NbData; i++) {
+		// Parrallel 0
 		tab[i].mobX += tab[i].accX;
-		tab[i].mobY += tab[i].accY;
-		tab[i].mobZ += tab[i].accZ;
 		tab[i].accX = 0;
-		tab[i].accY = 0;
-		tab[i].accZ = 0;
 		tab[i].posX += tab[i].mobX * 0.1;
+
+		tab[i].mobY += tab[i].accY;
+		tab[i].accY = 0;
 		tab[i].posY += tab[i].mobY * 0.1;
+
+		tab[i].mobZ += tab[i].accZ;
+		tab[i].accZ = 0;
 		tab[i].posZ += tab[i].mobZ * 0.1;
+		// Fin
 	}
 
-	// Loop to compute all new acceleration
+//Bonne méthode en simple core, mauvaise en multi core
+/*	#pragma omp parallel for
 	for (i = 0; i < NbData; i++) {
+		
+		float acX = 0;
+		float acY = 0;
+		float acZ = 0;
+		#pragma omp parallel for reduction (+:acX,acY,acZ)
 		for (j = i+1; j < NbData; j++) {
+			float tempo_acc = 0; //
+			struct temp tempo;
+
+			tempo.deltaX = tab[j].posX - tab[i].posX;
+			tempo.deltaY = tab[j].posY - tab[i].posY;
+			tempo.deltaZ = tab[j].posZ - tab[i].posZ;
+			// Pas de pow() car appel trop lourd pour calcul
+			tempo.d_ij = sqrt( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
+			// Calcul slide 31
+			if (tempo.d_ij < 1)
+				tempo.d_ij = 1;
+			tempo_acc = MASS_FACTOR*DAMPING_FACTOR*(1/(tempo.d_ij*tempo.d_ij*tempo.d_ij))*tab[j].masse; // Meme calcul realise trois fois
+
+			acX += tempo.deltaX * tempo_acc;
+			acY += tempo.deltaY * tempo_acc;
+			acZ += tempo.deltaZ * tempo_acc;
+
+			tab[j].accX += -tempo.deltaX * tempo_acc;
+			tab[j].accY += -tempo.deltaY * tempo_acc;
+			tab[j].accZ += -tempo.deltaZ * tempo_acc;
+		}
+		tab[i].accX += acX;
+		tab[i].accY += acY;
+		tab[i].accZ += acZ;
+		// On remarque que les calculs sont réalisés deux fois, au signe prêt (exemple, si i = 3 et j = 5, on fait
+		// le même calcul , au signe prêt, que lorsque i = 5 et j = 3/ En
+		
+	}*/
+//float accX = 0, accY = 0, accZ = 0;
+	#pragma omp parallel for
+	for ( i = 0; i < NbData; i++ ) {
+		//float tempo_acc = 0; 
+		//struct temp tempo;
+		float acX = 0;
+		float acY = 0;
+		float acZ = 0;
+		//#pragma omp parallel for reduction (+:acX,acY,acZ)
+		for ( j = 0; j < NbData; j++ ) {
+			float tempo_acc = 0; 
+			struct temp tempo;
+			if (j != i) {	
+			
+				// Parrallel 1
 				tempo.deltaX = tab[j].posX - tab[i].posX;
+
 				tempo.deltaY = tab[j].posY - tab[i].posY;
+
 				tempo.deltaZ = tab[j].posZ - tab[i].posZ;
-				// Pas de pow() car appel trop lourd pour calcul
+				// Fin parrallel 1
+
 				tempo.d_ij = sqrt( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
-				// Calcul slide 31
+
 				if (tempo.d_ij < 1)
 					tempo.d_ij = 1;
+
 				tempo_acc = MASS_FACTOR*DAMPING_FACTOR*(1/(tempo.d_ij*tempo.d_ij*tempo.d_ij))*tab[j].masse; // Meme calcul realise trois fois
-				tab[i].accX += tempo.deltaX * tempo_acc;
-				tab[i].accY += tempo.deltaY * tempo_acc;
-				tab[i].accZ += tempo.deltaZ * tempo_acc;
-				// On remarque que les calculs sont réalisés deux fois, au signe prêt (exemple, si i = 3 et j = 5, on fait
-				// le même calcul , au signe prêt, que lorsque i = 5 et j = 3/ En
-				tab[j].accX += -tab[i].accX;
-				tab[j].accY += -tab[i].accY;
-				tab[j].accZ += -tab[i].accZ;
+
+				// Parrallel 2
+				acX += tempo.deltaX * tempo_acc;
+
+				acY += tempo.deltaY * tempo_acc;
+
+				acZ += tempo.deltaZ * tempo_acc;
+				// Fin Parrallel 2
+			}
 		}
+		tab[i].accX = acX;
+		tab[i].accY = acY;
+		tab[i].accZ = acZ;
 	}
+
+	return;
 }
+
+
 
 void DrawGalaxies (struct particule aff[])
 {
@@ -218,7 +282,8 @@ void ShowAxes() {
 
 }
 
-int main( int argc, char ** argv ) {
+int main( int argc, char ** argv ) 
+{
 
 	SDL_Event event;
 	SDL_Window * window;

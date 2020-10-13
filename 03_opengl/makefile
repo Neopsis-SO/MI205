@@ -2,11 +2,11 @@ TARGET 		= opengl
 
 CC 			= gcc
 
-CFLAGS 		= -W -Wall
+CFLAGS 		= -W -Wall -fopenmp
 
 LINKER 		= gcc -o
 
-LFLAGS 		= -Wall -I. -lm -lGL -lGLEW -lSDL2 -lGLU
+LFLAGS 		= -Wall -I. -lm -lGL -lGLEW -lSDL2 -lGLU -fopenmp
 
 SRCDIR 		= src
 OBJDIR 		= obj
