@@ -11,7 +11,7 @@
 #include "text.h"
 
 #define DataFileSize 81920
-#define NbData	81920
+#define NbData	1024
 #define DataOffset DataFileSize/NbData
 #define path "src/dubinski.tab"
 
@@ -106,19 +106,18 @@ int dataExtraction(struct particule data[])
 		fscanf(DataFile, "%f %f %f %f %f %f %f\n", &buffMasse, &buffPosX, &buffPosY, &buffPosZ, &buffMobX, &buffMobY, &buffMobZ);
 
 		if(offsetIndex++ == DataOffset-1) {
-			//FIXME : particule seperation seems to doesn't work
-			if(lineIndex < DISK_SIZE/2)
+			if(lineIndex < DISK_SIZE)
 				data[dataIndex].galaxyName = 0;
-			else if(lineIndex < DISK_SIZE)
+			else if(lineIndex < DISK_SIZE*2)
 				data[dataIndex].galaxyName = 1;
-			else if(lineIndex < ((BULGE_SIZE/2)+DISK_SIZE))
-				data[dataIndex].galaxyName = 2;
-			else if(lineIndex < (BULGE_SIZE+DISK_SIZE))
-				data[dataIndex].galaxyName = 3;
-			else if(lineIndex < ((HALO_SIZE/2)+BULGE_SIZE))
-				data[dataIndex].galaxyName = 4;
+			else if(lineIndex < ((BULGE_SIZE)+DISK_SIZE*2))
+				data[dataIndex].galaxyName = 0;
+			else if(lineIndex < ((BULGE_SIZE+DISK_SIZE)*2))
+				data[dataIndex].galaxyName = 1;
+			else if(lineIndex < ((HALO_SIZE)+BULGE_SIZE*2+DISK_SIZE*2))
+				data[dataIndex].galaxyName = 0;
 			else
-				data[dataIndex].galaxyName = 5;
+				data[dataIndex].galaxyName = 1;
 			
 			offsetIndex = 0;
 			data[dataIndex].masse = buffMasse;
@@ -169,33 +168,22 @@ void CalculateMove (struct particule tab[]) {
 	}
 }
 
-void DrawGalaxies (struct particule aff[]) {
-	
+void DrawGalaxies (struct particule aff[])
+{
 	int i;
 
 	glPointSize( 0.1f );
-
 	glBegin( GL_POINTS );
 
-	for ( i = 0; i <= NbData; ++i ) {
-		if(aff[i].galaxyName == 0)
-			glColor3f( 0.0f, 0.0f, 1.0f );
-		else if(aff[i].galaxyName == 1)
-			glColor3f( 0.0f, 40.0f, 0.0f );
-		else if(aff[i].galaxyName == 2)
-			glColor3f( 50.0f, 0.0f, 0.0f );
-		else if(aff[i].galaxyName == 3)
-			glColor3f( 1.0f, 0.0f, 100.0f );
-		else if(aff[i].galaxyName == 4)
-			glColor3f( 10.0f, 10.0f, 0.0f );
-		else if(aff[i].galaxyName == 5)
-			glColor3f( 0.0f, 1.0f, 1.0f );
-
+	for ( i = 0; i <= NbData; i++ ) {
+		if(!aff[i].galaxyName) {
+			glColor3f(0.449f, 0.758f, 0.980f);	//(115/256, 194/256, 251/256) 
+		} else {
+			glColor3f(0.934f, 0.605f, 0.059f); //(239/256, 155/256, 15/256) 
+		}
 		glVertex3f( aff[i].posX, aff[i].posY, aff[i].posZ);
 	}
-
 	glEnd();
-
 }
 
 void ShowAxes() {
