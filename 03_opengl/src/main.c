@@ -173,7 +173,7 @@ void CalculateMove (struct particule tab[]) {
 			tempo.deltaY = tab[j].posY - tab[i].posY;
 			tempo.deltaZ = tab[j].posZ - tab[i].posZ;
 			// Pas de pow() car appel trop lourd pour calcul
-			tempo.d_ij = sqrt( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
+			tempo.d_ij = sqrtf( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
 			// Calcul slide 31
 			if (tempo.d_ij < 1)
 				tempo.d_ij = 1;
@@ -195,7 +195,7 @@ void CalculateMove (struct particule tab[]) {
 		
 	}*/
 //float accX = 0, accY = 0, accZ = 0;
-	#pragma omp parallel for
+	
 	for ( i = 0; i < NbData; i++ ) {
 		//float tempo_acc = 0; 
 		//struct temp tempo;
@@ -210,13 +210,11 @@ void CalculateMove (struct particule tab[]) {
 			
 				// Parrallel 1
 				tempo.deltaX = tab[j].posX - tab[i].posX;
-
 				tempo.deltaY = tab[j].posY - tab[i].posY;
-
 				tempo.deltaZ = tab[j].posZ - tab[i].posZ;
 				// Fin parrallel 1
 
-				tempo.d_ij = sqrt( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
+				tempo.d_ij = sqrtf( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
 
 				if (tempo.d_ij < 1)
 					tempo.d_ij = 1;
@@ -225,9 +223,7 @@ void CalculateMove (struct particule tab[]) {
 
 				// Parrallel 2
 				acX += tempo.deltaX * tempo_acc;
-
 				acY += tempo.deltaY * tempo_acc;
-
 				acZ += tempo.deltaZ * tempo_acc;
 				// Fin Parrallel 2
 			}
@@ -253,7 +249,7 @@ void DrawGalaxies (struct particule aff[])
 		if(!aff[i].galaxyName) {
 			glColor3f(0.449f, 0.758f, 0.980f);	//(115/256, 194/256, 251/256) 
 		} else {
-			glColor3f(0.934f, 0.605f, 0.059f); //(239/256, 155/256, 15/256) 
+			glColor3f(0.934f, 0.605f, 0.059f);	//(239/256, 155/256, 15/256) 
 		}
 		glVertex3f( aff[i].posX, aff[i].posY, aff[i].posZ);
 	}
@@ -279,12 +275,10 @@ void ShowAxes() {
 	glVertex3f( 0.0f, 0.0f, 2.0f );
 	
 	glEnd();
-
 }
 
 int main( int argc, char ** argv ) 
 {
-
 	SDL_Event event;
 	SDL_Window * window;
 	SDL_DisplayMode current;
@@ -341,11 +335,6 @@ int main( int argc, char ** argv )
 	/**********************/
 	
 	dataExtraction(all_particules);
-	//Test data extraction
-	// int k = 0;
-	// for (k = 0; k < NbData; k++) {
-	// 	printf("%f %f %f \n", all_particules[k].posX, all_particules[k].posY, all_particules[k].posZ);
-	// }
 
 	/**********************/
 
@@ -383,7 +372,7 @@ int main( int argc, char ** argv )
 		if ( SDL_GetMouseState( 0, 0 ) & SDL_BUTTON_LMASK ) {
 			oldCamRot[ 0 ] += -mouseDeltaY / 5.0f;
 			oldCamRot[ 1 ] += mouseDeltaX / 5.0f;
-		}else if ( SDL_GetMouseState( 0, 0 ) & SDL_BUTTON_RMASK ) {
+		} else if ( SDL_GetMouseState( 0, 0 ) & SDL_BUTTON_RMASK ) {
 			oldCamPos[ 2 ] += ( mouseDeltaY / 100.0f ) * 0.5 * fabs( oldCamPos[ 2 ] );
 			oldCamPos[ 2 ]  = oldCamPos[ 2 ] > -5.0f ? -5.0f : oldCamPos[ 2 ];
 		}
