@@ -32,7 +32,8 @@ void CalculateMove_k (particule tab[]) {
 				acY += tempo.deltaY * tempo_acc;
 				acZ += tempo.deltaZ * tempo_acc;
 				// Fin Parrallel 2
-			}
+
+			}	
 		}
 		tab[i].accX = acX;
 		tab[i].accY = acY;

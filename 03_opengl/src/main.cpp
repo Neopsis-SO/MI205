@@ -24,10 +24,14 @@ static float newCamRot[] = { 0.0f, 0.0f, 0.0f };
 static bool g_showGrid = true;
 static bool g_showAxes = true;
 
-cudaError_t cudaStatus;
+
 
 /*------------------------------*/
 // Variables for simulation 
+cudaError_t cudaStatus;
+
+int taille = NbData * sizeof( particule );
+particule * ad_gpu = NULL;
 
 particule all_particules[NbData];
 
@@ -131,26 +135,49 @@ void CalculateMove (particule tab[]) {
 	}
 
 
-	/*int taille = NbData * sizeof( particule );
-	particule * ad_gpu = NULL;
+
+
+
 
 	// Allocations des mémoire GPU (Etape 4)
-	cudaStatus = cudaMalloc( (void**) &ad_gpu, taille );
+	/*cudaStatus = cudaMalloc( (void**) &ad_gpu, taille );
 	if ( cudaStatus != cudaSuccess ) {
 		printf( "error: unable to allocate buffer\n");
 		return;
-	}
+	}*/
 
 	// Déplacements CPU -> GPU (Etape 5)
 	// cudaMemcpy(GPU adresse, CPU adresse, taille, type de copy);
-	cudaStatus = cudaMemcpy( ad_gpu, &tab, taille, cudaMemcpyHostToDevice );
+
+	cudaStatus = cudaMemcpy( (void *) ad_gpu, (void *) tab, taille, cudaMemcpyHostToDevice );
+
 	if ( cudaStatus != cudaSuccess ) {
 		printf( "error: unable to copy buffer\n");
 		return;
+	}
+
+	// Appel au Kernel (Etape 6)
+	CalculateMove_k (tab);
+
+	// Déplacement Mémoire GPU -> CPU (Etape 7)
+	cudaStatus = cudaMemcpy( (void *) tab, (void *) ad_gpu, taille, cudaMemcpyDeviceToHost );
+
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to copy buffer\n");
+		return;
+	}
+
+	// Libération de la mémoire (Etape 8)
+
+	/*cudaStatus = cudaDeviceReset();
+	if (cudaStatus != cudaSuccess) {
+		printf( "(EE) Unable to reset device\n" );
 	}*/
 
 
-	for ( i = 0; i < NbData; i++ ) {
+
+
+	/*for ( i = 0; i < NbData; i++ ) {
 		float acX = 0;
 		float acY = 0;
 		float acZ = 0;
@@ -183,7 +210,8 @@ void CalculateMove (particule tab[]) {
 		tab[i].accX = acX;
 		tab[i].accY = acY;
 		tab[i].accZ = acZ;
-	}
+	}*/
+
 	return;
 }
 
@@ -288,9 +316,18 @@ int main( int argc, char ** argv )
 	cudaStatus = cudaSetDevice( 0 );
 	if ( cudaStatus != cudaSuccess ) {
 		printf( "error: unable to setup cuda device\n");
+		return -1;
+	}
+
+	cudaStatus = cudaMalloc( (void**) &ad_gpu, taille );
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to allocate buffer\n");
+		return -1;
 	}
 
 	dataExtraction(all_particules);
+
+	
 
 	/**********************/
 
@@ -393,6 +430,11 @@ int main( int argc, char ** argv )
 	
 		SDL_GL_SwapWindow( window );
 		SDL_UpdateWindowSurface( window );
+	}
+
+	cudaStatus = cudaDeviceReset();
+	if (cudaStatus != cudaSuccess) {
+		printf( "(EE) Unable to reset device\n" );
 	}
 
 	SDL_GL_DeleteContext( glWindow );
