@@ -145,20 +145,20 @@ void CalculateMove (struct particule tab[]) {
 		// Parrallel 0
 		tab[i].mobX += tab[i].accX;
 		tab[i].accX = 0;
-		tab[i].posX += tab[i].mobX * 0.1;
+		tab[i].posX += tab[i].mobX * 0.1f;
 
 		tab[i].mobY += tab[i].accY;
 		tab[i].accY = 0;
-		tab[i].posY += tab[i].mobY * 0.1;
+		tab[i].posY += tab[i].mobY * 0.1f;
 
 		tab[i].mobZ += tab[i].accZ;
 		tab[i].accZ = 0;
-		tab[i].posZ += tab[i].mobZ * 0.1;
+		tab[i].posZ += tab[i].mobZ * 0.1f;
 		// Fin
 	}
 
 //Bonne méthode en simple core, mauvaise en multi core
-/*	#pragma omp parallel for
+	/*#pragma omp parallel for
 	for (i = 0; i < NbData; i++) {
 		
 		float acX = 0;
@@ -195,14 +195,14 @@ void CalculateMove (struct particule tab[]) {
 		
 	}*/
 //float accX = 0, accY = 0, accZ = 0;
-	
+	#pragma omp parallel for
 	for ( i = 0; i < NbData; i++ ) {
 		//float tempo_acc = 0; 
 		//struct temp tempo;
 		float acX = 0;
 		float acY = 0;
 		float acZ = 0;
-		//#pragma omp parallel for reduction (+:acX,acY,acZ)
+		#pragma omp parallel for reduction (+:acX,acY,acZ)
 		for ( j = 0; j < NbData; j++ ) {
 			float tempo_acc = 0; 
 			struct temp tempo;
@@ -317,7 +317,7 @@ int main( int argc, char ** argv )
 										SDL_WINDOW_OPENGL );
   
 	SDL_GLContext glWindow = SDL_GL_CreateContext( window );
-
+	
 	GLenum status = glewInit();
 
 	if ( status != GLEW_OK ) {
@@ -331,6 +331,8 @@ int main( int argc, char ** argv )
 	}
 
 	SDL_GL_SetSwapInterval( 1 );
+
+	omp_set_num_threads( 4 );
 
 	/**********************/
 	
