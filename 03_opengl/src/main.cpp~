@@ -10,17 +10,9 @@
 
 #include "text.h"
 
-#define DataFileSize 81920
-#define NbData	1024
-#define DataOffset DataFileSize/NbData
-#define path "src/dubinski.tab"
-
-#define DISK_SIZE 16384	//Fisrt in database
-#define BULGE_SIZE 8192	//Second in database
-#define HALO_SIZE 16384	//Third in database
-
-#define MASS_FACTOR 10
-#define DAMPING_FACTOR 1
+#include "cuda_runtime.h"
+#include "main.cuh"
+#include "kernel.cuh"
 
 static float g_inertia = 0.5f;
 
@@ -32,31 +24,16 @@ static float newCamRot[] = { 0.0f, 0.0f, 0.0f };
 static bool g_showGrid = true;
 static bool g_showAxes = true;
 
+cudaError_t cudaStatus;
+
 /*------------------------------*/
 // Variables for simulation 
 
-struct particule {
-	int galaxyName; //0:Milky Way / 1:Andromeda
-	float masse;
-	float posX;
-	float posY;
-	float posZ;
-	float mobX;
-	float mobY;
-	float mobZ;
-	float accX;
-	float accY;
-	float accZ;
-};
 
-struct temp {
-	float deltaX;
-	float deltaY;
-	float deltaZ;
-	float d_ij;
-};
 
-struct particule all_particules[NbData];
+
+
+particule all_particules[NbData];
 /*------------------------------*/
 
 void DrawGridXZ( float ox, float oy, float oz, int w, int h, float sz ) {
@@ -83,7 +60,7 @@ void DrawGridXZ( float ox, float oy, float oz, int w, int h, float sz ) {
 
 }
 
-int dataExtraction(struct particule data[])
+int dataExtraction(particule data[])
 {
 	float buffMasse = 0.0f;
 	float buffPosX = 0.0f;
@@ -135,12 +112,11 @@ int dataExtraction(struct particule data[])
 	return 0;
 }
 
-void CalculateMove (struct particule tab[]) {
+void CalculateMove (particule tab[]) {
 	int i = 0;
 	int j = 0;
 	
 	// Loop to calculate all new pos
-	#pragma omp parallel for
 	for (i = 0; i < NbData; i++) {
 		// Parrallel 0
 		tab[i].mobX += tab[i].accX;
@@ -157,55 +133,34 @@ void CalculateMove (struct particule tab[]) {
 		// Fin
 	}
 
-//Bonne méthode en simple core, mauvaise en multi core
-	/*#pragma omp parallel for
-	for (i = 0; i < NbData; i++) {
-		
-		float acX = 0;
-		float acY = 0;
-		float acZ = 0;
-		#pragma omp parallel for reduction (+:acX,acY,acZ)
-		for (j = i+1; j < NbData; j++) {
-			float tempo_acc = 0; //
-			struct temp tempo;
 
-			tempo.deltaX = tab[j].posX - tab[i].posX;
-			tempo.deltaY = tab[j].posY - tab[i].posY;
-			tempo.deltaZ = tab[j].posZ - tab[i].posZ;
-			// Pas de pow() car appel trop lourd pour calcul
-			tempo.d_ij = sqrtf( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
-			// Calcul slide 31
-			if (tempo.d_ij < 1)
-				tempo.d_ij = 1;
-			tempo_acc = MASS_FACTOR*DAMPING_FACTOR*(1/(tempo.d_ij*tempo.d_ij*tempo.d_ij))*tab[j].masse; // Meme calcul realise trois fois
+	/*int taille = NbData * sizeof( particule );
+	particule * ad_gpu = NULL;
 
-			acX += tempo.deltaX * tempo_acc;
-			acY += tempo.deltaY * tempo_acc;
-			acZ += tempo.deltaZ * tempo_acc;
+	// Allocations des mémoire GPU (Etape 4)
+	cudaStatus = cudaMalloc( (void**) &ad_gpu, taille );
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to allocate buffer\n");
+		return;
+	}
 
-			tab[j].accX += -tempo.deltaX * tempo_acc;
-			tab[j].accY += -tempo.deltaY * tempo_acc;
-			tab[j].accZ += -tempo.deltaZ * tempo_acc;
-		}
-		tab[i].accX += acX;
-		tab[i].accY += acY;
-		tab[i].accZ += acZ;
-		// On remarque que les calculs sont réalisés deux fois, au signe prêt (exemple, si i = 3 et j = 5, on fait
-		// le même calcul , au signe prêt, que lorsque i = 5 et j = 3/ En
-		
+	// Déplacements CPU -> GPU (Etape 5)
+	// cudaMemcpy(GPU adresse, CPU adresse, taille, type de copy);
+	cudaStatus = cudaMemcpy( ad_gpu, &tab, taille, cudaMemcpyHostToDevice );
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to copy buffer\n");
+		return;
 	}*/
-//float accX = 0, accY = 0, accZ = 0;
-	#pragma omp parallel for
+
+
 	for ( i = 0; i < NbData; i++ ) {
-		//float tempo_acc = 0; 
-		//struct temp tempo;
 		float acX = 0;
 		float acY = 0;
 		float acZ = 0;
-		#pragma omp parallel for reduction (+:acX,acY,acZ)
+
 		for ( j = 0; j < NbData; j++ ) {
 			float tempo_acc = 0; 
-			struct temp tempo;
+			temp tempo;
 			if (j != i) {	
 			
 				// Parrallel 1
@@ -232,13 +187,12 @@ void CalculateMove (struct particule tab[]) {
 		tab[i].accY = acY;
 		tab[i].accZ = acZ;
 	}
-
 	return;
 }
 
 
 
-void DrawGalaxies (struct particule aff[])
+void DrawGalaxies (particule aff[])
 {
 	int i;
 
@@ -332,10 +286,13 @@ int main( int argc, char ** argv )
 
 	SDL_GL_SetSwapInterval( 1 );
 
-	omp_set_num_threads( 4 );
-
 	/**********************/
-	
+	// Initialisation du GPU
+	cudaStatus = cudaSetDevice( 0 );
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to setup cuda device\n");
+	}
+
 	dataExtraction(all_particules);
 
 	/**********************/

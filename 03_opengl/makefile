@@ -1,33 +1,44 @@
 TARGET 		= opengl
 
-CC 			= gcc
+CC 			= g++
+NVCC 		= nvcc
+LINKER 		= g++ -o
 
-CFLAGS 		= -W -Wall -fopenmp -O3
+CUDA_INSTALL_PATH ?= /usr/local/cuda
 
-LINKER 		= gcc -o
+INCD 		= -I$(CUDA_INSTALL_PATH)/include
+LIBS 		= -L$(CUDA_INSTALL_PATH)/lib -lcudart
 
-LFLAGS 		= -Wall -I. -lm -lGL -lGLEW -lSDL2 -lGLU -fopenmp -O3
+CFLAGS 		= -O3 -g -W -Wall
+NFLAGS 		= -O3 -G -g -arch=compute_32
+LFLAGS 		= -O3 -Wall -I. -lm -lGL -lGLEW -lSDL2 -lGLU
 
 SRCDIR 		= src
 OBJDIR 		= obj
 BINDIR 		= bin
 
-SOURCES 	:= $(wildcard $(SRCDIR)/*.c)
+SOURCES 	:= $(wildcard $(SRCDIR)/*.cpp)
+SOURCES_CU 	:= $(wildcard $(SRCDIR)/*.cu)
 INCLUDES 	:= $(wildcard $(SRCDIR)/*.h)
-OBJECTS 	:= $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+INCLUDES_CU := $(wildcard $(SRCDIR)/*.cuh)
+OBJECTS 	:= $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
+OBJECTS_CU 	:= $(SOURCES_CU:$(SRCDIR)/%.cu=$(OBJDIR)/%.cuo)
 rm 			= rm -f
 
 all: $(BINDIR)/$(TARGET)
 
-$(BINDIR)/$(TARGET): $(OBJECTS)
-	@$(LINKER) $@ $(OBJECTS) $(LFLAGS) 
+$(BINDIR)/$(TARGET): $(OBJECTS_CU) $(OBJECTS)
+	@$(LINKER) $@ $(OBJECTS_CU) $(OBJECTS) $(INCD) $(LIBS) $(LFLAGS)
 
-$(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.c
-	@$(CC) $(CFLAGS) -c $< -o $@
+$(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.cpp
+	@$(CC) $(CFLAGS) $(INCD) -c $< -o $@
+
+$(OBJECTS_CU): $(OBJDIR)/%.cuo : $(SRCDIR)/%.cu
+	@$(NVCC) $(NFLAGS) $(INCD) -c $< -o $@
 
 .PHONY: clean
 clean:
-	@$(rm) $(OBJECTS)
+	@$(rm) $(OBJECTS_CU) $(OBJECTS)
 
 .PHONY: remove
 remove: clean
