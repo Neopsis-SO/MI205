@@ -28,7 +28,7 @@ __global__ void kernel_calculate (particule * tab) {
 				if (tempo.d_ij < 1)
 					tempo.d_ij = 1;
 
-				tempo_acc = MASS_FACTOR*DAMPING_FACTOR*(1/(tempo.d_ij*tempo.d_ij*tempo.d_ij))*tab[j]->masse; // Meme calcul realise trois fois
+				tempo_acc = MASS_FACTOR*DAMPING_FACTOR*(1/(tempo.d_ij*tempo.d_ij*tempo.d_ij))*tab[j].masse; // Meme calcul realise trois fois
 
 				// Parrallel 2
 				acX += tempo.deltaX * tempo_acc;
