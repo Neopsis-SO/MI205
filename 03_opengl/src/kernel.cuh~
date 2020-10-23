@@ -3,6 +3,6 @@
 
 #include "main.cuh"
 
-//void CalculateMove_k (struct particule tab[]);
+void CalculateMove_k (particule * tab[]);
 
 #endif

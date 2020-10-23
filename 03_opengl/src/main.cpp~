@@ -31,11 +31,122 @@ static bool g_showAxes = true;
 cudaError_t cudaStatus;
 
 int taille = NbData * sizeof( particule );
-particule * ad_gpu = NULL;
+
+particule  * ad_gpu = NULL;
 
 particule all_particules[NbData];
 
+// NOMBRE DE THREAD
+int NbThread = 128;
+
 /*------------------------------*/
+
+void CalculateMove (particule tab[]) {
+	int i = 0;
+	
+	// Loop to calculate all new pos
+	for (i = 0; i < NbData; i++) {
+		// Parrallel 0
+		tab[i].mobX += tab[i].accX;
+		tab[i].accX = 0;
+		tab[i].posX += tab[i].mobX * 0.1f;
+
+		tab[i].mobY += tab[i].accY;
+		tab[i].accY = 0;
+		tab[i].posY += tab[i].mobY * 0.1f;
+
+		tab[i].mobZ += tab[i].accZ;
+		tab[i].accZ = 0;
+		tab[i].posZ += tab[i].mobZ * 0.1f;
+		// Fin
+	}
+
+	//CalculateMove_k(tab);
+
+
+
+	// Allocations des mémoire GPU (Etape 4)
+	cudaStatus = cudaMalloc( (void**) &ad_gpu, taille );
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to allocate buffer\n");
+		return;
+	}
+	
+	// Déplacements CPU -> GPU (Etape 5)
+	// cuda fonction memcpy : cudaMemcpy(GPU adresse, CPU adresse, taille, type de copy);
+
+	cudaStatus = cudaMemcpy( ad_gpu, tab, taille, cudaMemcpyHostToDevice );
+
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to copy buffer 1\n");
+		return;
+	}
+	printf("Ok \n");
+
+	// Appel au Kernel (Etape 6)
+	CalculateMove_k(NbData, NbThread, ad_gpu);
+	printf("Le plus dur est passé!\n");
+
+	cudaStatus = cudaDeviceSynchronize();
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to synchronize threads\n");
+	}
+
+	// Déplacement Mémoire GPU -> CPU (Etape 7)
+	cudaStatus = cudaMemcpy( (void *) &tab[0], (void *) &ad_gpu[0], taille, cudaMemcpyDeviceToHost );
+
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to copy buffer 2\n");
+		return;
+	}
+
+	// Libération de la mémoire (Etape 8)
+
+	cudaStatus = cudaDeviceReset();
+	if (cudaStatus != cudaSuccess) {
+		printf( "(EE) Unable to reset device\n" );
+	}
+
+
+
+
+	/*for ( i = 0; i < NbData; i++ ) {
+		float acX = 0;
+		float acY = 0;
+		float acZ = 0;
+
+		for ( j = 0; j < NbData; j++ ) {
+			float tempo_acc = 0; 
+			temp tempo;
+			if (j != i) {	
+			
+				// Parrallel 1
+				tempo.deltaX = tab[j].posX - tab[i].posX;
+				tempo.deltaY = tab[j].posY - tab[i].posY;
+				tempo.deltaZ = tab[j].posZ - tab[i].posZ;
+				// Fin parrallel 1
+
+				tempo.d_ij = sqrtf( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
+
+				if (tempo.d_ij < 1)
+					tempo.d_ij = 1;
+
+				tempo_acc = MASS_FACTOR*DAMPING_FACTOR*(1/(tempo.d_ij*tempo.d_ij*tempo.d_ij))*tab[j].masse; // Meme calcul realise trois fois
+
+				// Parrallel 2
+				acX += tempo.deltaX * tempo_acc;
+				acY += tempo.deltaY * tempo_acc;
+				acZ += tempo.deltaZ * tempo_acc;
+				// Fin Parrallel 2
+			}
+		}
+		tab[i].accX = acX;
+		tab[i].accY = acY;
+		tab[i].accZ = acZ;
+	}*/
+
+	return;
+}
 
 void DrawGridXZ( float ox, float oy, float oz, int w, int h, float sz ) {
 	
@@ -113,107 +224,7 @@ int dataExtraction(particule data[])
 	return 0;
 }
 
-void CalculateMove (particule tab[]) {
-	int i = 0;
-	int j = 0;
-	
-	// Loop to calculate all new pos
-	for (i = 0; i < NbData; i++) {
-		// Parrallel 0
-		tab[i].mobX += tab[i].accX;
-		tab[i].accX = 0;
-		tab[i].posX += tab[i].mobX * 0.1f;
 
-		tab[i].mobY += tab[i].accY;
-		tab[i].accY = 0;
-		tab[i].posY += tab[i].mobY * 0.1f;
-
-		tab[i].mobZ += tab[i].accZ;
-		tab[i].accZ = 0;
-		tab[i].posZ += tab[i].mobZ * 0.1f;
-		// Fin
-	}
-
-
-
-
-
-
-	// Allocations des mémoire GPU (Etape 4)
-	cudaStatus = cudaMalloc( (void**) &ad_gpu, taille );
-	if ( cudaStatus != cudaSuccess ) {
-		printf( "error: unable to allocate buffer\n");
-		return;
-	}
-
-	// Déplacements CPU -> GPU (Etape 5)
-	// cudaMemcpy(GPU adresse, CPU adresse, taille, type de copy);
-
-	cudaStatus = cudaMemcpy( (void *) ad_gpu, (void *) tab, taille, cudaMemcpyHostToDevice );
-
-	if ( cudaStatus != cudaSuccess ) {
-		printf( "error: unable to copy buffer\n");
-		return;
-	}
-
-	// Appel au Kernel (Etape 6)
-	CalculateMove_k (tab);
-
-	// Déplacement Mémoire GPU -> CPU (Etape 7)
-	cudaStatus = cudaMemcpy( (void *) tab, (void *) ad_gpu, taille, cudaMemcpyDeviceToHost );
-
-	if ( cudaStatus != cudaSuccess ) {
-		printf( "error: unable to copy buffer\n");
-		return;
-	}
-
-	// Libération de la mémoire (Etape 8)
-
-	cudaStatus = cudaDeviceReset();
-	if (cudaStatus != cudaSuccess) {
-		printf( "(EE) Unable to reset device\n" );
-	}
-
-
-
-
-	/*for ( i = 0; i < NbData; i++ ) {
-		float acX = 0;
-		float acY = 0;
-		float acZ = 0;
-
-		for ( j = 0; j < NbData; j++ ) {
-			float tempo_acc = 0; 
-			temp tempo;
-			if (j != i) {	
-			
-				// Parrallel 1
-				tempo.deltaX = tab[j].posX - tab[i].posX;
-				tempo.deltaY = tab[j].posY - tab[i].posY;
-				tempo.deltaZ = tab[j].posZ - tab[i].posZ;
-				// Fin parrallel 1
-
-				tempo.d_ij = sqrtf( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
-
-				if (tempo.d_ij < 1)
-					tempo.d_ij = 1;
-
-				tempo_acc = MASS_FACTOR*DAMPING_FACTOR*(1/(tempo.d_ij*tempo.d_ij*tempo.d_ij))*tab[j].masse; // Meme calcul realise trois fois
-
-				// Parrallel 2
-				acX += tempo.deltaX * tempo_acc;
-				acY += tempo.deltaY * tempo_acc;
-				acZ += tempo.deltaZ * tempo_acc;
-				// Fin Parrallel 2
-			}
-		}
-		tab[i].accX = acX;
-		tab[i].accY = acY;
-		tab[i].accZ = acZ;
-	}*/
-
-	return;
-}
 
 
 
@@ -318,8 +329,8 @@ int main( int argc, char ** argv )
 		printf( "error: unable to setup cuda device\n");
 		return -1;
 	}
-/*
-	cudaStatus = cudaMalloc( (void**) &ad_gpu, taille );
+
+	/*cudaStatus = cudaMalloc( (void**) &ad_gpu[0], taille );
 	if ( cudaStatus != cudaSuccess ) {
 		printf( "error: unable to allocate buffer\n");
 		return -1;
