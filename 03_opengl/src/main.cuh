@@ -14,17 +14,29 @@
 #define DAMPING_FACTOR 1
 
 typedef struct {
-	int galaxyName; //0:Milky Way / 1:Andromeda
-	float masse;
 	float posX;
 	float posY;
 	float posZ;
+} particule_pos;
+
+typedef struct {
 	float mobX;
 	float mobY;
 	float mobZ;
+} particule_mob;
+
+typedef struct {
 	float accX;
 	float accY;
 	float accZ;
+} particule_acc;
+
+typedef struct {
+	int galaxyName; //0:Milky Way / 1:Andromeda
+	float masse;
+	particule_pos pos;
+	particule_mob mob;
+	particule_acc acc;
 } particule;
 
 typedef struct {

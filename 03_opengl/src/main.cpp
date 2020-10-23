@@ -24,15 +24,15 @@ static float newCamRot[] = { 0.0f, 0.0f, 0.0f };
 static bool g_showGrid = true;
 static bool g_showAxes = true;
 
-
-
 /*------------------------------*/
 // Variables for simulation 
 cudaError_t cudaStatus;
 
 int taille = NbData * sizeof( particule );
 
-particule  * ad_gpu = NULL;
+particule * ad_gpu = NULL;
+particule_acc * acc_gpu = NULL;
+particule_pos * pos_gpu = NULL;
 
 particule all_particules[NbData];
 
@@ -48,17 +48,17 @@ void CalculateMove (particule tab[]) {
 	// Loop to calculate all new pos
 	for (i = 0; i < NbData; i++) {
 		// Parrallel 0
-		tab[i].mobX += tab[i].accX;
-		tab[i].accX = 0;
-		tab[i].posX += tab[i].mobX * 0.1f;
+		tab[i].mob.mobX += tab[i].acc.accX;
+		tab[i].acc.accX = 0;
+		tab[i].pos.posX += tab[i].mob.mobX * 0.1f;
 
-		tab[i].mobY += tab[i].accY;
-		tab[i].accY = 0;
-		tab[i].posY += tab[i].mobY * 0.1f;
+		tab[i].mob.mobY += tab[i].acc.accY;
+		tab[i].acc.accY = 0;
+		tab[i].pos.posY += tab[i].mob.mobY * 0.1f;
 
-		tab[i].mobZ += tab[i].accZ;
-		tab[i].accZ = 0;
-		tab[i].posZ += tab[i].mobZ * 0.1f;
+		tab[i].mob.mobZ += tab[i].acc.accZ;
+		tab[i].acc.accZ = 0;
+		tab[i].pos.posZ += tab[i].mob.mobZ * 0.1f;
 		// Fin
 	}
 
@@ -73,6 +73,8 @@ void CalculateMove (particule tab[]) {
 		return;
 	}*/
 	
+
+
 	// Déplacements CPU -> GPU (Etape 5)
 	// cuda fonction memcpy : cudaMemcpy(GPU adresse, CPU adresse, taille, type de copy);
 
@@ -84,6 +86,7 @@ void CalculateMove (particule tab[]) {
 	}
 	//printf("Ok \n");
 
+
 	// Appel au Kernel (Etape 6)
 	CalculateMove_k(NbBlocks, NbThreads, ad_gpu);
 	//printf("Le plus dur est passé!\n");
@@ -92,6 +95,7 @@ void CalculateMove (particule tab[]) {
 	if ( cudaStatus != cudaSuccess ) {
 		printf( "error: unable to synchronize threads\n");
 	}
+
 
 	// Déplacement Mémoire GPU -> CPU (Etape 7)
 	cudaStatus = cudaMemcpy( (void *) &tab[0], (void *) &ad_gpu[0], taille, cudaMemcpyDeviceToHost );
@@ -173,12 +177,12 @@ int dataExtraction(particule data[])
 			
 			offsetIndex = 0;
 			data[dataIndex].masse = buffMasse;
-			data[dataIndex].posX = buffPosX;
-			data[dataIndex].posY = buffPosY;
-			data[dataIndex].posZ = buffPosZ;
-			data[dataIndex].mobX = buffMobX;
-			data[dataIndex].mobY = buffMobY;
-			data[dataIndex].mobZ = buffMobZ;
+			data[dataIndex].pos.posX = buffPosX;
+			data[dataIndex].pos.posY = buffPosY;
+			data[dataIndex].pos.posZ = buffPosZ;
+			data[dataIndex].mob.mobX = buffMobX;
+			data[dataIndex].mob.mobY = buffMobY;
+			data[dataIndex].mob.mobZ = buffMobZ;
 			dataIndex++;
 		}
 	}
@@ -204,7 +208,7 @@ void DrawGalaxies (particule aff[])
 		} else {
 			glColor3f(0.934f, 0.605f, 0.059f);	//(239/256, 155/256, 15/256) 
 		}
-		glVertex3f( aff[i].posX, aff[i].posY, aff[i].posZ);
+		glVertex3f( aff[i].pos.posX, aff[i].pos.posY, aff[i].pos.posZ);
 	}
 	glEnd();
 }
@@ -298,6 +302,13 @@ int main( int argc, char ** argv )
 		printf( "error: unable to allocate buffer\n");
 		return -1;
 	}
+
+	cudaStatus = cudaMalloc( (void**) &acc_gpu, taille );
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to allocate buffer\n");
+		return -1;
+	}
+
 
 	dataExtraction(all_particules);
 

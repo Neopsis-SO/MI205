@@ -18,9 +18,9 @@ __global__ void kernel_calculate (particule * tab) {
 			if (j != i) {	
 		
 				// Parrallel 1
-				tempo.deltaX = tab[j].posX - tab[i].posX;
-				tempo.deltaY = tab[j].posY - tab[i].posY;
-				tempo.deltaZ = tab[j].posZ - tab[i].posZ;
+				tempo.deltaX = tab[j].pos.posX - tab[i].pos.posX;
+				tempo.deltaY = tab[j].pos.posY - tab[i].pos.posY;
+				tempo.deltaZ = tab[j].pos.posZ - tab[i].pos.posZ;
 				// Fin parrallel 1
 
 				tempo.d_ij = sqrtf( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
@@ -38,9 +38,9 @@ __global__ void kernel_calculate (particule * tab) {
 
 			}	
 		}
-		tab[i].accX = acX;
-		tab[i].accY = acY;
-		tab[i].accZ = acZ;
+		acc_gpu[i].accX = acX;
+		acc_gpu[i].accY = acY;
+		acc_gpu[i].accZ = acZ;
 
 	}
 	return;
