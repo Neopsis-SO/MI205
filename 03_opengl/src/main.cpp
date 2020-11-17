@@ -29,10 +29,12 @@ static bool g_showAxes = true;
 cudaError_t cudaStatus;
 
 int taille = NbData * sizeof( particule );
+int taille_pos = NbData * sizeof( particule_pos );
 
 particule * ad_gpu = NULL;
 particule_acc * acc_gpu = NULL;
 particule_pos * pos_gpu = NULL;
+particule_pos pos_cpu[NbData];
 
 particule all_particules[NbData];
 
@@ -48,7 +50,7 @@ void CalculateMove (particule tab[]) {
 	// Loop to calculate all new pos
 	for (i = 0; i < NbData; i++) {
 		// Parrallel 0
-		tab[i].mob.mobX += tab[i].acc.accX;
+		/*tab[i].mob.mobX += tab[i].acc.accX;
 		tab[i].acc.accX = 0;
 		tab[i].pos.posX += tab[i].mob.mobX * 0.1f;
 
@@ -58,7 +60,12 @@ void CalculateMove (particule tab[]) {
 
 		tab[i].mob.mobZ += tab[i].acc.accZ;
 		tab[i].acc.accZ = 0;
-		tab[i].pos.posZ += tab[i].mob.mobZ * 0.1f;
+		tab[i].pos.posZ += tab[i].mob.mobZ * 0.1f;*/
+
+
+		tab[i].pos.posX = pos_cpu[i].posX;
+		tab[i].pos.posY = pos_cpu[i].posY;
+		tab[i].pos.posZ = pos_cpu[i].posZ;
 		// Fin
 	}
 
@@ -78,17 +85,17 @@ void CalculateMove (particule tab[]) {
 	// Déplacements CPU -> GPU (Etape 5)
 	// cuda fonction memcpy : cudaMemcpy(GPU adresse, CPU adresse, taille, type de copy);
 
-	cudaStatus = cudaMemcpy( ad_gpu, tab, taille, cudaMemcpyHostToDevice );
-
+	/*cudaStatus = cudaMemcpy( ad_gpu, tab, taille, cudaMemcpyHostToDevice );
 	if ( cudaStatus != cudaSuccess ) {
 		printf( "error: unable to copy buffer 1\n");
 		return;
-	}
+	}*/
+
 	//printf("Ok \n");
 
 
 	// Appel au Kernel (Etape 6)
-	CalculateMove_k(NbBlocks, NbThreads, ad_gpu);
+	CalculateMove_k(NbBlocks, NbThreads, ad_gpu, pos_gpu);
 	//printf("Le plus dur est passé!\n");
 
 	cudaStatus = cudaDeviceSynchronize();
@@ -98,7 +105,7 @@ void CalculateMove (particule tab[]) {
 
 
 	// Déplacement Mémoire GPU -> CPU (Etape 7)
-	cudaStatus = cudaMemcpy( (void *) &tab[0], (void *) &ad_gpu[0], taille, cudaMemcpyDeviceToHost );
+	cudaStatus = cudaMemcpy( (void *) pos_cpu, (void *) pos_gpu, taille_pos, cudaMemcpyDeviceToHost );
 
 	if ( cudaStatus != cudaSuccess ) {
 		printf( "error: unable to copy buffer 2\n");
@@ -303,15 +310,20 @@ int main( int argc, char ** argv )
 		return -1;
 	}
 
-	cudaStatus = cudaMalloc( (void**) &acc_gpu, taille );
+	cudaStatus = cudaMalloc( (void**) &pos_gpu, taille_pos );
 	if ( cudaStatus != cudaSuccess ) {
 		printf( "error: unable to allocate buffer\n");
 		return -1;
 	}
-
+	
 
 	dataExtraction(all_particules);
-
+	
+	cudaStatus = cudaMemcpy( ad_gpu, all_particules, taille, cudaMemcpyHostToDevice );
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to copy buffer 1\n");
+		return -1;
+	}
 	
 
 	/**********************/

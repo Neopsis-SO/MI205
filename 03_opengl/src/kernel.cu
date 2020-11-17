@@ -2,7 +2,7 @@
 #include "kernel.cuh"
 #include "stdio.h"
 
-__global__ void kernel_calculate (particule * tab) {
+__global__ void kernel_calculate (particule * tab, particule_pos * tab_ret) {
 
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i < NbData) {
@@ -36,17 +36,33 @@ __global__ void kernel_calculate (particule * tab) {
 				acZ += tempo.deltaZ * tempo_acc;
 				// Fin Parrallel 2
 
-			}	
+			}
+					
 		}
-		//acc_gpu[i].accX = acX; //FIXME
-		//acc_gpu[i].accY = acY;	//FIXME
-		//acc_gpu[i].accZ = acZ;//FIXME
+			//tab[i].acc.accX = acX;
+			//tab[i].acc.accY = acY;
+			//tab[i].acc.accZ = acZ;
+			
+			// Parrallel 0
+			tab[i].mob.mobX += acX;
+			tab[i].pos.posX += tab[i].mob.mobX * 0.1f;
+			tab_ret[i].posX = tab[i].pos.posX; 
+
+			tab[i].mob.mobY += acY;
+			tab[i].pos.posY += tab[i].mob.mobY * 0.1f;
+			tab_ret[i].posY = tab[i].pos.posY; 
+
+			tab[i].mob.mobZ += acZ;
+			tab[i].pos.posZ += tab[i].mob.mobZ * 0.1f;
+			tab_ret[i].posZ = tab[i].pos.posZ; 
+			// Fin
 
 	}
+
 	return;
 }
 
-void CalculateMove_k (int NbBlock, int NbThread, particule * tab) {
-	kernel_calculate<<<NbBlock,NbThread>>>(tab);
+void CalculateMove_k (int NbBlock, int NbThread, particule * tab, particule_pos * tab_ret) {
+	kernel_calculate<<<NbBlock,NbThread>>>(tab, tab_ret);
 	return;
 }

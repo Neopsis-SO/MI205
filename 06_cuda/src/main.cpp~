@@ -6,7 +6,7 @@
 #include "cuda_runtime.h"
 #include "kernel.cuh"
 
-//#define VERBOSE
+#define VERBOSE
 
 inline bool CUDA_MALLOC( void ** devPtr, size_t size ) {
 	cudaError_t cudaStatus;
@@ -40,7 +40,8 @@ int main( int argc, char ** argv ) {
 		printf( "usage: cuda vector_size num_threads\n" );
 		return 0;
 	}
-	
+
+	// Etape 0 - Initialisation du programme CPU
 	int n = atoi( argv[1] );
 	int numThreads = atoi( argv[2] );
 
@@ -54,38 +55,45 @@ int main( int argc, char ** argv ) {
 
 	srand( (unsigned int)time( NULL ) );
 
+	// Etape 1 - Init GPU / CUDA
+	cudaError_t cudaStatus;
+	cudaStatus = cudaSetDevice( 0 );
+	if ( cudaStatus != cudaSuccess ) {
+		printf( "error: unable to setup cuda device\n");
+	}
+
+	// Etape 2 - Allocations mémoire CPU
 	hostSrc1 = (float *)malloc( sizeof( float ) * n );
 	hostSrc2 = (float *)malloc( sizeof( float ) * n );
 	hostDst1 = (float *)malloc( sizeof( float ) * n );
-
+	
+	// Etape 3 - Remplissage des mémoires CPU
 	RandomizeFloatArray( n, hostSrc1 );
 	RandomizeFloatArray( n, hostSrc2 );
-
-	memset( hostDst1, 0.0f, sizeof( float ) * n );
-
-	cudaError_t cudaStatus;
-
-	cudaStatus = cudaSetDevice( 0 );
-
-	if ( cudaStatus != cudaSuccess ) {
-		printf( "error: nable to setup cuda device\n");
-	}
 	
+	memset( hostDst1, 0.0f, sizeof( float ) * n );
+	
+	// Etape 4 - Allocation memoire GPU
 	CUDA_MALLOC( (void**)&deviceSrc1, n * sizeof( float ) );
 	CUDA_MALLOC( (void**)&deviceSrc2, n * sizeof( float ) );
 	CUDA_MALLOC( (void**)&deviceDst1, n * sizeof( float ) );
 
+	// Etape 5 - Deplacement CPU -> GPU
 	CUDA_MEMCPY( deviceSrc1, hostSrc1, n * sizeof( float ), cudaMemcpyHostToDevice );
 	CUDA_MEMCPY( deviceSrc2, hostSrc2, n * sizeof( float ), cudaMemcpyHostToDevice );
 
+	// Etape 6 - Appel au Kernel
 	int numBlocks = ( n + ( numThreads - 1 ) ) / numThreads;
 
 	saxpy( numBlocks, numThreads, n, 2.0, deviceSrc1, deviceSrc2, deviceDst1 );
-
+	
+	cudaStatus = cudaDeviceSynchronize();
+	
 	if ( cudaStatus != cudaSuccess ) {
-		printf( "error: unable to copy buffer to GPU\n");
+		printf( "error: unable to synchronize threads\n");
 	}
 
+	// Etape 7 - Deplacement GPU -> CPU
 	CUDA_MEMCPY( hostDst1, deviceDst1, n * sizeof( float ), cudaMemcpyDeviceToHost );
 	
 	#ifdef VERBOSE
@@ -94,6 +102,13 @@ int main( int argc, char ** argv ) {
 		}
 	#endif
 
+	// Etape 8 - Libération des mémoires
+	cudaStatus = cudaDeviceReset();
+
+	if (cudaStatus != cudaSuccess) {
+		printf( "(EE) Unable to reset device\n" );
+	}
+	
 	printf( "done\n" );
 
 	return 1;

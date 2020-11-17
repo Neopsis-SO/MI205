@@ -15,7 +15,6 @@ int main( int argc, char ** argv ) {
 	}
 
 	#pragma omp parallel for reduction(+:sum)
-	#pragma omp parallel for private/shared(sum) //l'un ou l'autre
 	for ( i = 0; i < 1000; i++ ) {
 		for ( j = 0; j < 1000; j++ ) {	
 			sum = sum + i + j;

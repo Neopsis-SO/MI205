@@ -3,6 +3,6 @@
 
 #include "main.cuh"
 
-void CalculateMove_k(int NbBlock, int NbThread, particule * tab);
+void CalculateMove_k(int NbBlock, int NbThread, particule * tab, particule_pos * tab_ret);
 
 #endif
