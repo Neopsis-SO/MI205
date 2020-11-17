@@ -2,7 +2,7 @@
 #define __MAIN_CUH__
 
 #define DataFileSize 81920
-#define NbData	1024
+#define NbData	20480
 #define DataOffset DataFileSize/NbData
 #define path "src/dubinski.tab"
 

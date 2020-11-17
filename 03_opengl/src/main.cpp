@@ -38,73 +38,25 @@ particule_pos pos_cpu[NbData];
 
 particule all_particules[NbData];
 
+int name[NbData];
+
 // GPU ARCHITECTURE
 int NbGPUCore = 192;
 int NbThreads = 128;
 int NbBlocks = ( NbData + ( NbThreads - 1 ) ) / NbThreads;
 /*------------------------------*/
 
-void CalculateMove (particule tab[]) {
-	int i = 0;
-	
-	// Loop to calculate all new pos
-	for (i = 0; i < NbData; i++) {
-		// Parrallel 0
-		/*tab[i].mob.mobX += tab[i].acc.accX;
-		tab[i].acc.accX = 0;
-		tab[i].pos.posX += tab[i].mob.mobX * 0.1f;
+// Le contenu de calculate move est réalisé dans la boucle directement.
+/*void CalculateMove (void) {
 
-		tab[i].mob.mobY += tab[i].acc.accY;
-		tab[i].acc.accY = 0;
-		tab[i].pos.posY += tab[i].mob.mobY * 0.1f;
-
-		tab[i].mob.mobZ += tab[i].acc.accZ;
-		tab[i].acc.accZ = 0;
-		tab[i].pos.posZ += tab[i].mob.mobZ * 0.1f;*/
-
-
-		tab[i].pos.posX = pos_cpu[i].posX;
-		tab[i].pos.posY = pos_cpu[i].posY;
-		tab[i].pos.posZ = pos_cpu[i].posZ;
-		// Fin
-	}
-
-	//CalculateMove_k(tab);
-
-
-
-	// Allocations des mémoire GPU (Etape 4)
-	/*cudaStatus = cudaMalloc( (void**) &ad_gpu, taille );
-	if ( cudaStatus != cudaSuccess ) {
-		printf( "error: unable to allocate buffer\n");
-		return;
-	}*/
-	
-
-
-	// Déplacements CPU -> GPU (Etape 5)
-	// cuda fonction memcpy : cudaMemcpy(GPU adresse, CPU adresse, taille, type de copy);
-
-	/*cudaStatus = cudaMemcpy( ad_gpu, tab, taille, cudaMemcpyHostToDevice );
-	if ( cudaStatus != cudaSuccess ) {
-		printf( "error: unable to copy buffer 1\n");
-		return;
-	}*/
-
-	//printf("Ok \n");
-
-
-	// Appel au Kernel (Etape 6)
 	CalculateMove_k(NbBlocks, NbThreads, ad_gpu, pos_gpu);
-	//printf("Le plus dur est passé!\n");
+
 
 	cudaStatus = cudaDeviceSynchronize();
 	if ( cudaStatus != cudaSuccess ) {
 		printf( "error: unable to synchronize threads\n");
 	}
 
-
-	// Déplacement Mémoire GPU -> CPU (Etape 7)
 	cudaStatus = cudaMemcpy( (void *) pos_cpu, (void *) pos_gpu, taille_pos, cudaMemcpyDeviceToHost );
 
 	if ( cudaStatus != cudaSuccess ) {
@@ -112,15 +64,8 @@ void CalculateMove (particule tab[]) {
 		return;
 	}
 
-	// Libération de la mémoire (Etape 8)
-
-	/*cudaStatus = cudaDeviceReset();
-	if (cudaStatus != cudaSuccess) {
-		printf( "(EE) Unable to reset device\n" );
-	}*/
-
 	return;
-}
+}*/
 
 void DrawGridXZ( float ox, float oy, float oz, int w, int h, float sz ) {
 	
@@ -169,18 +114,30 @@ int dataExtraction(particule data[])
 		fscanf(DataFile, "%f %f %f %f %f %f %f\n", &buffMasse, &buffPosX, &buffPosY, &buffPosZ, &buffMobX, &buffMobY, &buffMobZ);
 
 		if(offsetIndex++ == DataOffset-1) {
-			if(lineIndex < DISK_SIZE)
+			if(lineIndex < DISK_SIZE) {
 				data[dataIndex].galaxyName = 0;
-			else if(lineIndex < DISK_SIZE*2)
+				name[dataIndex] = 0;
+			}
+			else if(lineIndex < DISK_SIZE*2) {
 				data[dataIndex].galaxyName = 1;
-			else if(lineIndex < ((BULGE_SIZE)+DISK_SIZE*2))
+				name[dataIndex] = 1;
+			}
+			else if(lineIndex < ((BULGE_SIZE)+DISK_SIZE*2)) {
 				data[dataIndex].galaxyName = 0;
-			else if(lineIndex < ((BULGE_SIZE+DISK_SIZE)*2))
+				name[dataIndex] = 0;
+			}
+			else if(lineIndex < ((BULGE_SIZE+DISK_SIZE)*2)) {
 				data[dataIndex].galaxyName = 1;
-			else if(lineIndex < ((HALO_SIZE)+BULGE_SIZE*2+DISK_SIZE*2))
+				name[dataIndex] = 1;
+			}
+			else if(lineIndex < ((HALO_SIZE)+BULGE_SIZE*2+DISK_SIZE*2)) {
 				data[dataIndex].galaxyName = 0;
-			else
+				name[dataIndex] = 0;
+			}
+			else {
 				data[dataIndex].galaxyName = 1;
+				name[dataIndex] = 1;
+			}
 			
 			offsetIndex = 0;
 			data[dataIndex].masse = buffMasse;
@@ -201,8 +158,9 @@ int dataExtraction(particule data[])
 
 
 
-
-void DrawGalaxies (particule aff[])
+// Le contenu de DrawGalaxies est réalisé directement dans la boucle
+/*
+void DrawGalaxies (void)
 {
 	int i;
 
@@ -210,15 +168,15 @@ void DrawGalaxies (particule aff[])
 	glBegin( GL_POINTS );
 
 	for ( i = 0; i <= NbData; i++ ) {
-		if(!aff[i].galaxyName) {
+		if( ! (all_particules[i].galaxyName) ) {
 			glColor3f(0.449f, 0.758f, 0.980f);	//(115/256, 194/256, 251/256) 
 		} else {
 			glColor3f(0.934f, 0.605f, 0.059f);	//(239/256, 155/256, 15/256) 
 		}
-		glVertex3f( aff[i].pos.posX, aff[i].pos.posY, aff[i].pos.posZ);
+		glVertex3f( pos_cpu[i].posX, pos_cpu[i].posY, pos_cpu[i].posZ);
 	}
 	glEnd();
-}
+}*/
 
 void ShowAxes() {
 
@@ -324,7 +282,6 @@ int main( int argc, char ** argv )
 		printf( "error: unable to copy buffer 1\n");
 		return -1;
 	}
-	
 
 	/**********************/
 
@@ -405,9 +362,35 @@ int main( int argc, char ** argv )
 
 		/*------------------------------*/
 		// Simulation should be computed here
-		CalculateMove(all_particules);
-		DrawGalaxies(all_particules);
-		 
+		//CalculateMove();
+
+		CalculateMove_k(NbBlocks, NbThreads, ad_gpu, pos_gpu);
+
+		cudaStatus = cudaDeviceSynchronize();
+		if ( cudaStatus != cudaSuccess ) {
+			printf( "error: unable to synchronize threads\n");
+		}
+
+		cudaStatus = cudaMemcpy( (void *) pos_cpu, (void *) pos_gpu, taille_pos, cudaMemcpyDeviceToHost );
+
+		if ( cudaStatus != cudaSuccess ) {
+			printf( "error: unable to copy buffer 2\n");
+			return -1;
+		}
+
+		//DrawGalaxies();
+		glPointSize( 0.1f );
+		glBegin( GL_POINTS );
+
+		for ( i = 0; i <= NbData; i++ ) {
+			if( ! (all_particules[i].galaxyName) ) {
+				glColor3f(0.449f, 0.758f, 0.980f);	//(115/256, 194/256, 251/256) 
+			} else {
+				glColor3f(0.934f, 0.605f, 0.059f);	//(239/256, 155/256, 15/256) 
+			}
+			glVertex3f( pos_cpu[i].posX, pos_cpu[i].posY, pos_cpu[i].posZ);
+		}
+		glEnd();		 
 		/*------------------------------*/
 
 		gettimeofday( &end, NULL );
