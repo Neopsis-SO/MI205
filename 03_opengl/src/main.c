@@ -161,7 +161,7 @@ void CalculateMove (struct particule tab[]) {
 				tempo.deltaY = tab[j].posY - tab[i].posY;
 				tempo.deltaZ = tab[j].posZ - tab[i].posZ;
 				// Pas de pow() car appel trop lourd pour calcul
-				tempo.d_ij = sqrt( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
+				tempo.d_ij = sqrtf( tempo.deltaX*tempo.deltaX + tempo.deltaY*tempo.deltaY + tempo.deltaZ*tempo.deltaZ );
 				// Calcul slide 31
 				if (tempo.d_ij < 1)
 					tempo.d_ij = 1;
