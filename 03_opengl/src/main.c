@@ -194,6 +194,8 @@ void CalculateMove (struct particule tab[]) {
 		// le même calcul , au signe prêt, que lorsque i = 5 et j = 3/ En
 		
 	}*/
+
+	
 //float accX = 0, accY = 0, accZ = 0;
 	#pragma omp parallel for
 	for ( i = 0; i < NbData; i++ ) {
