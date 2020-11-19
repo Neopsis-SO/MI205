@@ -46,26 +46,6 @@ int NbThreads = 128;
 int NbBlocks = ( NbData + ( NbThreads - 1 ) ) / NbThreads;
 /*------------------------------*/
 
-// Le contenu de calculate move est réalisé dans la boucle directement.
-/*void CalculateMove (void) {
-
-	CalculateMove_k(NbBlocks, NbThreads, ad_gpu, pos_gpu);
-
-
-	cudaStatus = cudaDeviceSynchronize();
-	if ( cudaStatus != cudaSuccess ) {
-		printf( "error: unable to synchronize threads\n");
-	}
-
-	cudaStatus = cudaMemcpy( (void *) pos_cpu, (void *) pos_gpu, taille_pos, cudaMemcpyDeviceToHost );
-
-	if ( cudaStatus != cudaSuccess ) {
-		printf( "error: unable to copy buffer 2\n");
-		return;
-	}
-
-	return;
-}*/
 
 void DrawGridXZ( float ox, float oy, float oz, int w, int h, float sz ) {
 	
@@ -155,28 +135,6 @@ int dataExtraction(particule data[])
 	return 0;
 }
 
-
-
-
-// Le contenu de DrawGalaxies est réalisé directement dans la boucle
-/*
-void DrawGalaxies (void)
-{
-	int i;
-
-	glPointSize( 0.1f );
-	glBegin( GL_POINTS );
-
-	for ( i = 0; i <= NbData; i++ ) {
-		if( ! (all_particules[i].galaxyName) ) {
-			glColor3f(0.449f, 0.758f, 0.980f);	//(115/256, 194/256, 251/256) 
-		} else {
-			glColor3f(0.934f, 0.605f, 0.059f);	//(239/256, 155/256, 15/256) 
-		}
-		glVertex3f( pos_cpu[i].posX, pos_cpu[i].posY, pos_cpu[i].posZ);
-	}
-	glEnd();
-}*/
 
 void ShowAxes() {
 
@@ -362,7 +320,6 @@ int main( int argc, char ** argv )
 
 		/*------------------------------*/
 		// Simulation should be computed here
-		//CalculateMove();
 
 		CalculateMove_k(NbBlocks, NbThreads, ad_gpu, pos_gpu);
 
@@ -378,7 +335,6 @@ int main( int argc, char ** argv )
 			return -1;
 		}
 
-		//DrawGalaxies();
 		glPointSize( 0.1f );
 		glBegin( GL_POINTS );
 
