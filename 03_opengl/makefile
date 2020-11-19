@@ -10,7 +10,7 @@ INCD 		= -I$(CUDA_INSTALL_PATH)/include
 LIBS 		= -L$(CUDA_INSTALL_PATH)/lib -lcudart
 
 CFLAGS 		= -O3 -W -Wall
-NFLAGS 		= -O3 -arch=compute_32
+NFLAGS 		= -O3 --use_fast_math -arch=compute_32
 LFLAGS 		= -O3 -Wall -I. -lm -lGL -lGLEW -lSDL2 -lGLU
 
 SRCDIR 		= src
